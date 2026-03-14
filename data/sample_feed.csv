@@ -1,0 +1,30 @@
+# LOB Simulator — Sample L2 Feed
+# Format: timestamp_ns, event_type, order_id, side, price, quantity
+# Prices are fixed-point integers (1e8 scale): 10050000000 == $100.50
+
+# --- Establish initial book depth ---
+1700000000000, ADD,    1001, BID, 10000000000, 100
+1700000000050, ADD,    1002, BID,  9990000000, 200
+1700000000100, ADD,    1003, BID,  9980000000, 300
+1700000000150, ADD,    1004, ASK, 10010000000, 100
+1700000000200, ADD,    1005, ASK, 10020000000, 150
+1700000000250, ADD,    1006, ASK, 10030000000, 200
+
+# --- Second order at same bid level (tests FIFO queue) ---
+1700000000300, ADD,    1007, BID, 10000000000, 50
+
+# --- Cancel an order ---
+1700000000350, CANCEL, 1002, BID,  9990000000,   0
+
+# --- Crossing order: aggressive bid at ask price → trade ---
+# Aggressor 1008 crosses 1004 fully; fill: 100 @ 10010000000
+1700000000400, ADD,    1008, BID, 10010000000, 100
+
+# --- Informational trade record (from external feed, not generated here) ---
+1700000000400, TRADE,  1008, BID, 10010000000, 100
+
+# --- Partial fill: aggressive ask hits bid side partially ---
+# Aggressor 1009 (ASK 50 @ 10000000000) fills against 1001 (100 @ 10000000000)
+# After fill: 50 remains from 1001, 1007 still queued behind it
+1700000000450, ADD,    1009, ASK, 10000000000,  50
+1700000000450, TRADE,  1009, ASK, 10000000000,  50
